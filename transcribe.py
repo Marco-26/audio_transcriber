@@ -3,7 +3,7 @@ from openai import OpenAI
 from pydub import AudioSegment
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+#TODO: Implement a inbuilt audio compressor
 def transcribe_audio(chunk_files):
     num_chunks = len(chunk_files)
     if num_chunks == 0:
@@ -11,16 +11,20 @@ def transcribe_audio(chunk_files):
 
     print("Starting transcription")
 
-    
-    with open(chunk_files[0], "rb") as audio_to_transcribe:
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_to_transcribe,
-    )
+    transcripted_audios = ""
+
+    for i in range(num_chunks):
+        with open(chunk_files[i], "rb") as audio_to_transcribe:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_to_transcribe,
+        )
+        print(f"finished transcribing {i} chunks/s")
+        transcripted_audios += transcript.text
         
     print("Finished transcription")
 
-    return transcript.text;
+    return transcripted_audios;
 
 def split_audio(file_path):
     print("Splitting audio into smaller chunks")
@@ -57,6 +61,16 @@ def generate_chunk_files(chunks):
 
     return chunk_files
 
+def save_transcript(transcript):
+    output_file_path = "transcript.txt"
+
+    # Write the transcript to the file
+    with open(output_file_path, "w") as output_file:
+        output_file.write(transcript)
+
+    print(f"Transcript saved to {output_file_path}")
+
+
 if __name__ == "__main__":
     import sys
 
@@ -74,4 +88,3 @@ if __name__ == "__main__":
     chunk_files = generate_chunk_files(chunks)
 
     transcript = transcribe_audio(chunk_files)
-    print(transcript)
