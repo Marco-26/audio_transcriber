@@ -4,37 +4,35 @@ from pydub import AudioSegment
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def transcribe_audio(file):
-  with open(file, "rb") as audio_to_transcribe:
-      transcript = client.audio.transcriptions.create(
-          model="whisper-1", 
-          file=audio_to_transcribe,
-      )
-  return transcript.text;
+def transcribe_audio(chunk_files):
+    num_chunks = len(chunk_files)
+    if num_chunks == 0:
+        return
 
-# def split_audio(file):
-#     output_folder = "output_chunks"
-#     max_chunk_size_min = 25
+    print("Starting transcription")
 
-#     audio = AudioSegment.from_mp3(file)
-#     duration_seconds = len(audio) / 1000
-#     duration_minutes = duration_seconds / 60
+    
+    with open(chunk_files[0], "rb") as audio_to_transcribe:
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1", 
+            file=audio_to_transcribe,
+    )
+        
+    print("Finished transcription")
 
-#     #quantity of chunks needed
-#     n = round(duration_minutes / max_chunk_size_min)
+    return transcript.text;
 
-#     print("Length: " + str(duration_minutes))
-#     print("Chunks needed: " + str(n))
-
-#     for x in n:
-def split_audio(file_path, num_chunks):
+def split_audio(file_path):
+    print("Splitting audio into smaller chunks")
     audio = AudioSegment.from_mp3(file_path)
+    max_chunk_length = 25
 
-    # Calculate the duration of each chunk
-    total_duration = len(audio) / 1000  # Convert milliseconds to seconds
+    total_duration = len(audio) / 1000 
+    duration_minutes = total_duration / 60
+    
+    num_chunks = round(duration_minutes / max_chunk_length)
     chunk_duration = total_duration / num_chunks
 
-    # Split the audio into chunks
     chunks = []
     start_time = 0
     for i in range(num_chunks):
@@ -43,7 +41,21 @@ def split_audio(file_path, num_chunks):
         chunks.append(chunk)
         start_time = end_time
 
+    print("Done splitting the audio...")
+    print(f"Created {num_chunks} chunks from the original audio")
+
     return chunks
+
+def generate_chunk_files(chunks):
+    print("Generating temporary chunk files...")
+    chunk_files = []
+
+    for i, chunk in enumerate(chunks):
+        temp_file_path = os.path.join("output_chunks", f"chunk_{i}.mp3")
+        chunk.export(temp_file_path, format="mp3")
+        chunk_files.append(temp_file_path)
+
+    return chunk_files
 
 if __name__ == "__main__":
     import sys
@@ -58,11 +70,8 @@ if __name__ == "__main__":
         print("Error: File not found.")
         sys.exit(1)
     
-    chunks = split_audio(audio_file_path, 7)
-    print(chunks)
+    chunks = split_audio(audio_file_path)
+    chunk_files = generate_chunk_files(chunks)
 
-    for i, chunk in enumerate(chunks):
-        chunk.export(f"output_chunk_{i + 1}.mp3", format="mp3", parameters=["-ac", "2", "-ar", "44100", "-ab", "192k"])
-
-    # transcript = transcribe_audio(audio_file_path)
-    # print(transcript)
+    transcript = transcribe_audio(chunk_files)
+    print(transcript)
