@@ -11,7 +11,7 @@ def transcribe_audio(chunk_files):
 
     print("Starting transcription")
 
-    transcripted_audios = ""
+    transcripted_chunks = ""
 
     for i in range(num_chunks):
         with open(chunk_files[i], "rb") as audio_to_transcribe:
@@ -19,12 +19,12 @@ def transcribe_audio(chunk_files):
                 model="whisper-1", 
                 file=audio_to_transcribe,
         )
-        print(f"finished transcribing {i} chunks/s")
-        transcripted_audios += transcript.text
+        print(f"Finished transcribing {i} chunks/s")
+        transcripted_chunks += transcript.text
         
     print("Finished transcription")
 
-    return transcripted_audios;
+    return transcripted_chunks;
 
 def split_audio(file_path):
     print("Splitting audio into smaller chunks")
@@ -46,7 +46,6 @@ def split_audio(file_path):
         start_time = end_time
 
     print("Done splitting the audio...")
-    print(f"Created {num_chunks} chunks from the original audio")
 
     return chunks
 
@@ -58,13 +57,14 @@ def generate_chunk_files(chunks):
         temp_file_path = os.path.join("output_chunks", f"chunk_{i}.mp3")
         chunk.export(temp_file_path, format="mp3")
         chunk_files.append(temp_file_path)
+    
+    print(f"Created {len(chunk_files)} chunks from the original audio")
 
     return chunk_files
 
 def save_transcript(transcript):
     output_file_path = "transcript.txt"
 
-    # Write the transcript to the file
     with open(output_file_path, "w") as output_file:
         output_file.write(transcript)
 
@@ -74,11 +74,11 @@ def save_transcript(transcript):
 if __name__ == "__main__":
     import sys
 
-    # i f len(sys.argv) != 2:
-    #     print("Usage:7 {} <audio_file_path>".format(sys.argv[0]))
-    #     sys.exit(1)
+    if len(sys.argv) != 2:
+        print("Usage:7 {} <audio_file_path>".format(sys.argv[0]))
+        sys.exit(1)
 
-    audio_file_path = "20240229.mp3" 
+    audio_file_path = sys.argv[1]
 
     if not os.path.isfile(audio_file_path):
         print("Error: File not found.")
@@ -88,3 +88,4 @@ if __name__ == "__main__":
     chunk_files = generate_chunk_files(chunks)
 
     transcript = transcribe_audio(chunk_files)
+    save_transcript(transcript)
