@@ -13,7 +13,7 @@ def transcribe_single_chunk(chunk):
             model="whisper-1", 
             file=audio_to_transcribe,
     )
-    print(f"Finished transcribing audio")
+    print(f"Finished transcribing audio/s")
     transcripted_chunk = transcript.text
     return transcripted_chunk
 
@@ -44,11 +44,6 @@ def split_audio(file_path):
 
     total_duration = len(audio) / 1000 
     duration_minutes = total_duration / 60
-    
-    if(duration_minutes < max_chunk_length):
-        print("File too small. No need to split it")
-        chunks.append(audio)
-        return chunks
 
     num_chunks = round(duration_minutes / max_chunk_length)
     chunk_duration = total_duration / num_chunks
@@ -65,10 +60,6 @@ def split_audio(file_path):
     return chunks
 
 def generate_chunk_files(chunks):
-    if(len(chunks) == 1):
-        #return the path to the audio
-        return chunks
-
     print("Generating temporary chunk files...")
     chunk_files = []
 
@@ -89,7 +80,7 @@ def get_file_size(file_path):
     return duration_minutes
 
 def save_transcript(transcript, filename):
-    with open(filename+".txt", "w") as output_file:
+    with open(filename+"", "w") as output_file:
         output_file.write(transcript)
 
     print(f"Transcript saved to {filename}")
