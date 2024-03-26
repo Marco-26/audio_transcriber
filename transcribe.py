@@ -90,7 +90,7 @@ def get_file_size(audio_file_path):
     return duration_minutes
 
 def save_transcript(transcript, filename):
-    with open(filename+"", "w") as output_file:
+    with open(filename+".txt", "w") as output_file:
         output_file.write(transcript)
 
     print(f"Transcript saved to {filename}")
@@ -115,9 +115,11 @@ if __name__ == "__main__":
         print("Usage:7 {} <audio_file_path>".format(sys.argv[0]))
         sys.exit(1)
     
+    print("It's highly recommended to compress the audio before using this script...")
+
     file_name = prompt_file_name()
     audio_file_path = sys.argv[1]
-
+    
     if not os.path.isfile(audio_file_path):
         print("Error: File not found.")
         sys.exit(1)
