@@ -1,135 +1,108 @@
 import os
 from openai import OpenAI
 from pydub import AudioSegment
+import shutil
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+MAX_CHUNK_LENGTH_IN_MS = 10 * 60 * 1000
+OUTPUT_CHUNKS_FOLDER_PATH = "output_chunks"
 
-#TODO: Implement a inbuilt audio compressor
-def transcribe_single_chunk(chunk):
-    print("Starting transcription")
-    transcripted_chunk = ""
+def transcribe_audio_file(openai_client, audio_file_path):
+    with open(audio_file_path, "rb") as audio_to_transcribe:
+        transcript_obj = openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_to_transcribe,
 
-    try: 
-        with open(chunk, "rb") as audio_to_transcribe:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
-                file=audio_to_transcribe,
         )
-        print(f"Finished transcribing audio/s")
-        transcripted_chunk = transcript.text
-    except Exception as e:
-        print(f"An error occurred during transcription: {e}")
-        sys.exit(1)
 
-    return transcripted_chunk
+    return transcript_obj.text
 
-def transcribe_multiple_chunks(chunk_files):
-    num_chunks = len(chunk_files)
+def transcribe_single_chunk(openai_client, audio_chunk):
+    print("Starting transcription")
+    transcript = transcribe_audio_file(openai_client, audio_chunk)
+    print(f"Finished transcribing audio")
+    return transcript
+
+def transcribe_multiple_chunks(openai_client, chunk_file_paths):
     print("Starting transcription")
 
-    transcripted_chunks = ""
-    
-    for i in range(num_chunks):
-        try:
-            with open(chunk_files[i], "rb") as audio_to_transcribe:
-                transcript = client.audio.transcriptions.create(
-                    model="whisper-1", 
-                    file=audio_to_transcribe,
-            )
-            print(f"Finished transcribing {i} chunks/s")
-            transcripted_chunks += transcript.text
-        except Exception as e:
-            print(f"An error occurred during transcription: {e}")
-            sys.exit(1)
+    transcript = ""
+
+    for i, chunk_file_path in enumerate(chunk_file_paths):
+        transcript += transcribe_audio_file(openai_client, chunk_file_path)
+        print(f"Finished transcribing chunk {i}")
 
     print("Finished transcription")
 
-    return transcripted_chunks;
+    return transcript
 
-def split_audio(file_path):
+def split_audio(audio):
     print("Splitting audio into smaller chunks")
-    audio = AudioSegment.from_mp3(file_path)
-    max_chunk_length = 25 
-    chunks = []
-
-    total_duration = len(audio) / 1000 
-    duration_minutes = total_duration / 60
-
-    num_chunks = round(duration_minutes / max_chunk_length)
-    chunk_duration = total_duration / num_chunks
-
-    start_time = 0
-    for i in range(num_chunks):
-        end_time = start_time + chunk_duration
-        chunk = audio[int(start_time * 1000):int(end_time * 1000)]
-        chunks.append(chunk)
-        start_time = end_time
-
+    audio_chunks = [audio[i:i+MAX_CHUNK_LENGTH_IN_MS] for i in range(0, len(audio), MAX_CHUNK_LENGTH_IN_MS)]
     print("Done splitting the audio...")
+    return audio_chunks
 
-    return chunks
-
-def generate_chunk_files(chunks):
+def generate_chunk_files(audio_chunks):
     print("Generating temporary chunk files...")
-    chunk_files = []
-
-    for i, chunk in enumerate(chunks):
-        temp_file_path = os.path.join("output_chunks", f"chunk_{i}.mp3")
-        chunk.export(temp_file_path, format="mp3")
-        chunk_files.append(temp_file_path)
+    chunk_file_paths = []
     
-    print(f"Created {len(chunk_files)} chunks from the original audio")
+    if not os.path.exists(OUTPUT_CHUNKS_FOLDER_PATH):
+        os.makedirs(OUTPUT_CHUNKS_FOLDER_PATH)
 
-    return chunk_files
+    for i, audio_chunk in enumerate(audio_chunks):
+        chunk_file_path = os.path.join(OUTPUT_CHUNKS_FOLDER_PATH, f"chunk_{i}.mp3")
+        audio_chunk.export(chunk_file_path, format="mp3")
+        chunk_file_paths.append(chunk_file_path)
 
-def get_file_size(audio_file_path):
-    audio = AudioSegment.from_mp3(audio_file_path)
-    total_duration = len(audio) / 1000 
-    duration_minutes = total_duration / 60
-    
-    return duration_minutes
+    print(f"Created {len(chunk_file_paths)} chunks from the original audio")
+
+    return chunk_file_paths
 
 def save_transcript(transcript, filename):
-    with open(filename+".txt", "w") as output_file:
+    with open(filename, "w", encoding="utf-8") as output_file:
         output_file.write(transcript)
 
     print(f"Transcript saved to {filename}")
 
-def prompt_file_name():
-    while True:
-        file_name = input("Enter the desired filename to save the transcript (without extension): ")
-        if not file_name:
-            print("Error: Filename cannot be empty.")
-            continue
-        elif not file_name.isalnum():
-            print("Error: Filename should contain only alphanumeric characters.")
-            continue
-        else:
-            break
-    return file_name
+def delete_chunks():
+    shutil.rmtree(OUTPUT_CHUNKS_FOLDER_PATH)
+    os.makedirs(OUTPUT_CHUNKS_FOLDER_PATH)
 
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) != 2:
-        print("Usage:7 {} <audio_file_path>".format(sys.argv[0]))
+    if len(sys.argv) != 3:
+        print("Usage: {} <audio_file_path> <transcribed_file_name>".format(sys.argv[0]))
         sys.exit(1)
-    
-    print("It's highly recommended to compress the audio before using this script...")
 
-    file_name = prompt_file_name()
     audio_file_path = sys.argv[1]
-    
-    if not os.path.isfile(audio_file_path):
+    transcribed_file_name = sys.argv[2]
+
+    if not os.path.exists(audio_file_path):
         print("Error: File not found.")
         sys.exit(1)
 
-    if(get_file_size(audio_file_path) <=25):
-        transcript = transcribe_single_chunk(audio_file_path)
-    else:
-        chunks = split_audio(audio_file_path)
-        chunk_files = generate_chunk_files(chunks)
+    if not os.path.isfile(audio_file_path):
+        print("Error: Provided audio path is not a file.")
+        sys.exit(1)
 
-        transcript = transcribe_multiple_chunks(chunk_files)
-    
-    save_transcript(transcript,file_name)
+    if not transcribed_file_name.isalnum():
+        print("Error: Filename should contain only alphanumeric characters.")
+        sys.exit(1)
+
+    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    audio = AudioSegment.from_mp3(audio_file_path)
+
+    try:
+        if len(audio) <= MAX_CHUNK_LENGTH_IN_MS:
+            transcript = transcribe_single_chunk(openai_client, audio_file_path)
+        else:
+            audio_chunks = split_audio(audio)
+            chunk_file_paths = generate_chunk_files(audio_chunks)
+
+            transcript = transcribe_multiple_chunks(openai_client, chunk_file_paths)
+            delete_chunks()
+    except Exception as e:
+        print(f"An error occurred during transcription: {e}")
+        sys.exit(1)
+
+    save_transcript(transcript, transcribed_file_name+".txt")
