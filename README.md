@@ -22,9 +22,10 @@ This command will install all the required packages listed in the requirements.t
 ## Usage
 
 ```bash
-python transcribe.py <audio_file_path>
+python transcribe.py <audio_file_path> <transcribed_file_name>
 ```
 - <audio_file_path>: Path to the audio file you want to transcribe.
+- <transcribed_file_name>: Name of the file containing the content of the transcribed audio
 
 ## Features
 
@@ -40,7 +41,7 @@ python transcribe.py <audio_file_path>
 ## Example
 
 ``` bash
-python transcribe.py example_audio.mp3
+python transcribe.py example_audio.mp3 myTranscription
 ```
 
 ## License
