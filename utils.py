@@ -1,4 +1,5 @@
 import pathlib
+import logging
 
 def valid_file_type(filename:str):
   accepted_types = ['.mp3', '.mp4', '.wav']
@@ -8,8 +9,8 @@ def valid_file_type(filename:str):
   else:
     return False
   
-def save_transcript(transcript, filename):
-  with open(filename, "w", encoding="utf-8") as output_file:
+def save_transcript(transcript):
+  with open("transcript.txt", "w", encoding="utf-8") as output_file:
       output_file.write(transcript)
 
-  print(f"Transcript saved to {filename}")
+  logging.info("Transcript saved to transcript.txt")

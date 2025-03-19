@@ -5,6 +5,9 @@ import argparse
 from transcriber import Transcriber
 from utils import save_transcript
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--audio", type=str, help='Filepath of audio file to use as raw audio source')
+  
 def main(args):
   audio_file_path = args.audio
   
@@ -19,7 +22,7 @@ def main(args):
   try:
     transcriber = Transcriber(os.getenv("OPENAI_API_KEY"))
     transcript = transcriber.transcribe(audio_file_path)
-    save_transcript(transcript, "transcript.txt")
+    save_transcript(transcript)
   except FileNotFoundError as e:
     print(e)
   except ValueError as e:
@@ -28,8 +31,5 @@ def main(args):
     print(e)
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--audio", type=str, help='Filepath of audio file to use as raw audio source')
-  
   args = parser.parse_args()
   main(args)
