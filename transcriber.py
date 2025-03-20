@@ -2,7 +2,7 @@ import os
 import shutil
 import logging
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from pydub import AudioSegment
 from utils import valid_file_type
 
@@ -15,7 +15,9 @@ class Transcriber:
 
   def __init__(self, api_key):
     self.openai_client = OpenAI(api_key=api_key)
-
+    if self.openai_client.api_key is None:
+      raise OpenAIError("OpenAI API key is missing. Set it using OPENAI_API_KEY environment variable.")
+    
   def __transcribe_audio_file(self, audio_file_path):
     with open(audio_file_path, "rb") as audio_to_transcribe:
       transcript_obj = self.openai_client.audio.transcriptions.create(

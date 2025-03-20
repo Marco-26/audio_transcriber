@@ -1,12 +1,12 @@
 import os
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 import shutil
 import argparse
 from transcriber import Transcriber
 from utils import save_transcript
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--audio", type=str, help='Filepath of audio file to use as raw audio source')
+parser.add_argument("--audio", type=str, help='Filepath of audio file to use as raw audio source', required=True)
   
 def main(args):
   audio_file_path = args.audio
