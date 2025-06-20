@@ -6,18 +6,19 @@ This Python script is designed to transcribe audio files using the OpenAI API. I
 
 Before using this tool, make sure you have the following installed:
 
-- Python 3.0
-- `openai` Python package (`pip install openai`)
-- `pydub` Python package (`pip install pydub`)
-- `ffmpeg` (https://ffmpeg.org/)
+- [Python 3.0](https://www.python.org/)
+- [FFmpeg](https://ffmpeg.org/)
 - An OpenAI API key set as an environment variable named `OPENAI_API_KEY`
 
-Alternatively, you can install all dependencies by running:
-
+To install all the dependecies, first create a virtual environment:
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/Marco-26/audio-transcriber.git
+cd audio-transcriber/
+python3 -m venv venv
+python install -r requirements.txt
 ```
-This command will install all the required packages listed in the requirements.txt file. Make sure to set up your OpenAI API key as mentioned above. **You still have to manually install ffmpeg.**
+
+This will install all the required packages listed in the requirements.txt file. Make sure to set up your OpenAI API key as mentioned above. **You still have to manually install ffmpeg.**
 
 ## Usage
 
