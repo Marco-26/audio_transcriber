@@ -22,7 +22,7 @@ def main(args):
   try:
     transcriber = Transcriber(os.getenv("OPENAI_API_KEY"))
     transcript = transcriber.transcribe(audio_file_path)
-    save_transcript(transcript)
+    # save_transcript(transcript)
   except FileNotFoundError as e:
     print(e)
   except ValueError as e:
