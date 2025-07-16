@@ -4,6 +4,8 @@ import shutil
 import argparse
 from transcriber import Transcriber
 from utils import save_transcript
+from dotenv import load_dotenv
+load_dotenv()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
