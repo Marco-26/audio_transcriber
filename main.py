@@ -1,12 +1,13 @@
 import os
-from openai import OpenAI, OpenAIError
-import shutil
 import argparse
+
 from transcriber import Transcriber
-from utils import save_transcript
+from dotenv import load_dotenv
+load_dotenv()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
+parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI')
   
 def main(args):
   audio_file_path = args.audio
@@ -20,7 +21,7 @@ def main(args):
     return
 
   try:
-    transcriber = Transcriber(os.getenv("OPENAI_API_KEY"))
+    transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider)
     transcript = transcriber.transcribe(audio_file_path)
     # save_transcript(transcript)
   except FileNotFoundError as e:
