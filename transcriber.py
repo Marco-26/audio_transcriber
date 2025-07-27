@@ -12,24 +12,20 @@ import time
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class Transcriber():
-  def __init__(self, api_key:str, provider:str):
+  def __init__(self, api_key:str, provider:str, model_size:str):
     self.provider = None
     
     if provider == 'OpenAI':
       self.provider = CloudTranscriber(api_key)  
     else:
-      self.provider = LocalTranscriber()
+      self.provider = LocalTranscriber(model_size)
       
   def transcribe(self, audio_file_path) -> str:
-    self.provider.transcribe(audio_file_path=audio_file_path)
+    return self.provider.transcribe(audio_file_path=audio_file_path)
 
-class LocalTranscriber(Transcriber):
-  MODEL_SIZE = "tiny"
-  
-  def __init__(self):
-    super().__init__()
-  
-  def __init__(self):
+class LocalTranscriber():
+  def __init__(self, model_size:str="tiny"):
+    self.MODEL_SIZE = model_size
     self.model = WhisperModel(self.MODEL_SIZE, 'cpu', compute_type="int8")  
     
   def __transcribe_audio_file(self, audio_file_path):
@@ -54,20 +50,15 @@ class LocalTranscriber(Transcriber):
       with open("transcription.txt", "w") as file:
         for segment in segments:
           transcription += segment.text
-
-      print(f"Transcription took: {(end-start):.2f} seconds. Saved to transcription.txt")
       return transcription
     except Exception as e:
       logging.error(f"An error occurred during transcription: {e}")
       raise RuntimeError(f"An error occurred during transcription: {e}")
     
-class CloudTranscriber(Transcriber):
+class CloudTranscriber():
   MAX_CHUNK_LENGTH_IN_MS = 10 * 60 * 1000
   OUTPUT_CHUNKS_FOLDER_PATH = "output_chunks"
   
-  def __init__(self):
-    super().__init__()
-    
   def __init__(self, api_key):
     self.openai_client = OpenAI(api_key=api_key)
     if self.openai_client.api_key is None:

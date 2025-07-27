@@ -5,9 +5,13 @@ from transcriber import Transcriber
 from dotenv import load_dotenv
 load_dotenv()
 
+from utils import save_transcript
+
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
 parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI')
+parser.add_argument("--model_size", type=str, help='Transcription Model Size', default='tiny')
+
   
 def main(args):
   audio_file_path = args.audio
@@ -21,9 +25,10 @@ def main(args):
     return
 
   try:
-    transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider)
+    transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider, args.model_size)
     transcript = transcriber.transcribe(audio_file_path)
-    # save_transcript(transcript)
+    print(transcript)
+    save_transcript(transcript=transcript)
   except FileNotFoundError as e:
     print(e)
   except ValueError as e:
