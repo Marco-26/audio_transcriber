@@ -5,14 +5,60 @@ import logging
 from openai import OpenAI, OpenAIError
 from pydub import AudioSegment
 from utils import valid_file_type
+from faster_whisper import WhisperModel
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-class Transcriber:
+class Transcriber():
+  def __init__(self, api_key:str, provider:str, model_size:str):
+    self.provider = None
+    
+    if provider == 'OpenAI':
+      self.provider = CloudTranscriber(api_key)  
+    else:
+      self.provider = LocalTranscriber(model_size)
+      
+  def transcribe(self, audio_file_path) -> str:
+    return self.provider.transcribe(audio_file_path=audio_file_path)
+
+class LocalTranscriber():
+  def __init__(self, model_size:str="tiny"):
+    self.MODEL_SIZE = model_size
+    self.model = WhisperModel(self.MODEL_SIZE, 'cpu', compute_type="int8")  
+    
+  def __transcribe_audio_file(self, audio_file_path):
+    segments, _ = self.model.transcribe(audio_file_path, beam_size=5)
+    segments = list(segments)
+    return segments
+  
+  def transcribe(self, audio_file_path) -> str:
+    if not os.path.exists(audio_file_path) or not os.path.isfile(audio_file_path):
+      raise FileNotFoundError(f"Error: The file '{audio_file_path}' does not exist or is not a valid file.")
+
+    if not valid_file_type(audio_file_path):
+      raise ValueError(f"Only audio files accepted. '{audio_file_path}' is not an audio file.")
+
+    try:
+      start = time.perf_counter()
+      segments = self.__transcribe_audio_file(audio_file_path)
+      end = time.perf_counter()
+      
+      transcription = ''
+      
+      with open("transcription.txt", "w") as file:
+        for segment in segments:
+          transcription += segment.text
+      return transcription
+    except Exception as e:
+      logging.error(f"An error occurred during transcription: {e}")
+      raise RuntimeError(f"An error occurred during transcription: {e}")
+    
+class CloudTranscriber():
   MAX_CHUNK_LENGTH_IN_MS = 10 * 60 * 1000
   OUTPUT_CHUNKS_FOLDER_PATH = "output_chunks"
-
+  
   def __init__(self, api_key):
     self.openai_client = OpenAI(api_key=api_key)
     if self.openai_client.api_key is None:
@@ -71,7 +117,7 @@ class Transcriber:
     os.makedirs(self.OUTPUT_CHUNKS_FOLDER_PATH)
     logging.info("Temporary chunk files deleted.")
 
-  def transcribe(self, audio_file_path):
+  def transcribe(self, audio_file_path) -> str:
     if not os.path.exists(audio_file_path) or not os.path.isfile(audio_file_path):
       raise FileNotFoundError(f"Error: The file '{audio_file_path}' does not exist or is not a valid file.")
 
