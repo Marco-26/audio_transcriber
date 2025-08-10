@@ -1,4 +1,6 @@
 venv/
 data/
+output_chunks/
+transcriptions/
 .env
 video4.mp3
