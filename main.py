@@ -1,7 +1,7 @@
 import os
 import argparse
 
-from transcriber import Transcriber
+from transcriber import Transcriber, MODEL_SIZES
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,10 +11,9 @@ load_dotenv()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
-parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI')
-parser.add_argument("--model_size", type=str, help='Transcription Model Size', default='tiny')
+parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI', choices=["openai", "local"])
+parser.add_argument("--model_size", type=str, help='Transcription Model Size', default='tiny', choices=MODEL_SIZES)
 
-  
 def main(args):
   audio_file_path = args.audio
   

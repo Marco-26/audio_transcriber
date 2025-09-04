@@ -11,22 +11,49 @@ import time
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+MODEL_SIZES=[
+  "tiny.en", 
+  "tiny", 
+  "base.en", 
+  "base", 
+  "small.en", 
+  "small", 
+  "medium.en", 
+  "medium", 
+  "large-v1", 
+  "large-v2", 
+  "large-v3", 
+  "large", 
+  "distil-large-v2", 
+  "distil-medium.en", 
+  "distil-small.en", 
+  "distil-large-v3", 
+  "large-v3-turbo", 
+  "turbo"
+]
+
+MODEL_TYPES=["local","openai"]
 class Transcriber():
   def __init__(self, api_key:str, provider:str, model_size:str):
     self.provider = None
     
-    if provider == 'OpenAI':
+    if provider.lower() == 'openai':
       self.provider = CloudTranscriber(api_key)  
-    else:
+    elif provider.lower() == 'local':
       self.provider = LocalTranscriber(model_size)
+    else:
+      raise ValueError(f"Provider {provider} not availabe. Providers: {MODEL_TYPES}")
       
   def transcribe(self, audio_file_path) -> str:
     return self.provider.transcribe(audio_file_path=audio_file_path)
 
 class LocalTranscriber():
   def __init__(self, model_size:str="tiny"):
-    self.MODEL_SIZE = model_size
-    self.model = WhisperModel(self.MODEL_SIZE, 'cpu', compute_type="int8")  
+    if model_size not in MODEL_SIZES:
+      logging.error("Specified model size doesn't exist")
+      raise ValueError(f'Invalid model size {model_size}. Available sizes: {MODEL_SIZES}')
+        
+    self.model = WhisperModel(model_size, 'cpu', compute_type="int8")  
     
   def __transcribe_audio_file(self, audio_file_path):
     segments, _ = self.model.transcribe(audio_file_path, beam_size=5)
@@ -60,9 +87,9 @@ class CloudTranscriber():
   OUTPUT_CHUNKS_FOLDER_PATH = "output_chunks"
   
   def __init__(self, api_key):
+    if not api_key:
+      raise ValueError(f"API key not defined for OpenAI. Please set it using OPENAI_API_KEY environment variable.")
     self.openai_client = OpenAI(api_key=api_key)
-    if self.openai_client.api_key is None:
-      raise OpenAIError("OpenAI API key is missing. Set it using OPENAI_API_KEY environment variable.")
     
   def __transcribe_audio_file(self, audio_file_path):
     with open(audio_file_path, "rb") as audio_to_transcribe:
