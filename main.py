@@ -1,7 +1,6 @@
 import os
-from openai import OpenAI, OpenAIError
-import shutil
 import argparse
+
 from transcriber import Transcriber
 from utils import save_transcript
 from dotenv import load_dotenv
