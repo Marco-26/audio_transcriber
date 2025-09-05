@@ -2,7 +2,8 @@ import os
 import shutil
 import logging
 
-from openai import OpenAI, OpenAIError
+from pathlib import Path
+from openai import OpenAI
 from pydub import AudioSegment
 from utils import valid_file_type
 from faster_whisper import WhisperModel
@@ -35,17 +36,22 @@ MODEL_SIZES=[
 MODEL_TYPES=["local","openai"]
 class Transcriber():
   def __init__(self, api_key:str, provider:str, model_size:str):
-    self.provider = None
-    
     if provider.lower() == 'openai':
       self.provider = CloudTranscriber(api_key)  
     elif provider.lower() == 'local':
       self.provider = LocalTranscriber(model_size)
     else:
       raise ValueError(f"Provider {provider} not availabe. Providers: {MODEL_TYPES}")
-      
+  
+  def _validate_path(self, audio_file_path):  
+    if not Path(audio_file_path).exists() or not Path(audio_file_path).is_file():
+      raise FileNotFoundError(f"The file '{audio_file_path}' does not exist or is not a file.")
+
   def transcribe(self, audio_file_path) -> str:
-    return self.provider.transcribe(audio_file_path=audio_file_path)
+    self._validate_path(audio_file_path)
+    
+    if self.provider:
+     return self.provider.transcribe(audio_file_path=audio_file_path)
 
 class LocalTranscriber():
   def __init__(self, model_size:str="tiny"):
@@ -89,6 +95,7 @@ class CloudTranscriber():
   def __init__(self, api_key):
     if not api_key:
       raise ValueError(f"API key not defined for OpenAI. Please set it using OPENAI_API_KEY environment variable.")
+    
     self.openai_client = OpenAI(api_key=api_key)
     
   def __transcribe_audio_file(self, audio_file_path):

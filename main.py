@@ -1,9 +1,8 @@
-import os
+import logging
 import argparse
+import os
 
 from transcriber import Transcriber, MODEL_SIZES
-from dotenv import load_dotenv
-load_dotenv()
 
 from utils import save_transcript
 from dotenv import load_dotenv
@@ -14,28 +13,19 @@ parser.add_argument("audio", type=str, help='Filepath of audio file to use as ra
 parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI', choices=["openai", "local"])
 parser.add_argument("--model_size", type=str, help='Transcription Model Size', default='tiny', choices=MODEL_SIZES)
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 def main(args):
-  audio_file_path = args.audio
-  
-  if not os.path.exists(audio_file_path):
-    print("Error: File not found.")
-    return
-
-  if not os.path.isfile(audio_file_path):
-    print("Error: Provided audio path is not a file.")
-    return
-
   try:
     transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider, args.model_size)
-    transcript = transcriber.transcribe(audio_file_path)
-    print(transcript)
+    transcript = transcriber.transcribe(args.audio)
     save_transcript(transcript=transcript)
   except FileNotFoundError as e:
-    print(e)
+    logging.error(e)
   except ValueError as e:
-    print(e)
+    logging.error(e)
   except RuntimeError as e:
-    print(e)
+    logging.error(e)
 
 if __name__ == "__main__":
   args = parser.parse_args()
