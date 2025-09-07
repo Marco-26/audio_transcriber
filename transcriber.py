@@ -1,14 +1,14 @@
 import os
 import shutil
 import logging
+import magic
 
 from pathlib import Path
 from openai import OpenAI
 from pydub import AudioSegment
-from utils import valid_file_type
+from utils import validate_path
 from faster_whisper import WhisperModel
 from concurrent.futures import ThreadPoolExecutor
-from utils import save_transcript
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -35,6 +35,7 @@ MODEL_SIZES=[
 ]
 
 MODEL_TYPES=["local","openai"]
+
 class Transcriber():
   def __init__(self, api_key:str, provider:str, model_size:str):
     if provider.lower() == 'openai':
@@ -44,14 +45,7 @@ class Transcriber():
     else:
       raise ValueError(f"Provider {provider} not availabe. Providers: {MODEL_TYPES}")
   
-  def _validate_path(self, audio_file_path):  
-    if not Path(audio_file_path).exists() or not Path(audio_file_path).is_file():
-      raise FileNotFoundError(f"The file '{audio_file_path}' does not exist or is not a file.")
-    #TODO: Validate file type aswell
-
   def transcribe(self, audio_file_path) -> str:
-    self._validate_path(audio_file_path)
-    
     if self.provider:
      return self.provider.transcribe(audio_file_path=audio_file_path)
      
@@ -71,11 +65,7 @@ class LocalTranscriber():
     return segments
   
   def transcribe(self, audio_file_path) -> str:
-    if not os.path.exists(audio_file_path) or not os.path.isfile(audio_file_path):
-      raise FileNotFoundError(f"Error: The file '{audio_file_path}' does not exist or is not a valid file.")
-
-    if not valid_file_type(audio_file_path):
-      raise ValueError(f"Only audio files accepted. '{audio_file_path}' is not an audio file.")
+    validate_path(audio_file_path)
 
     try:
       segments = self.__transcribe_audio_file(audio_file_path)
@@ -114,17 +104,6 @@ class CloudTranscriber():
     logging.info("Starting transcription of single chunk...")
     transcript = self.__transcribe_audio_file(audio_chunk)
     logging.info("Finished transcribing single chunk.")
-    return transcript
-
-  def __transcribe_multiple_chunks(self, chunk_file_paths):
-    logging.info(f"Starting transcription of {len(chunk_file_paths)} chunks...")
-    transcript = ""
-
-    for i, chunk_file_path in enumerate(chunk_file_paths):
-        transcript += self.__transcribe_audio_file(chunk_file_path)
-        logging.info(f"Finished transcribing chunk {i + 1}/{len(chunk_file_paths)}")
-
-    logging.info("Completed transcription of all chunks.")
     return transcript
 
   def __split_audio(self, audio):
@@ -169,12 +148,7 @@ class CloudTranscriber():
     return "".join(results)
     
   def transcribe(self, audio_file_path) -> str:
-    use_threads = False
-    if not os.path.exists(audio_file_path) or not os.path.isfile(audio_file_path):
-      raise FileNotFoundError(f"Error: The file '{audio_file_path}' does not exist or is not a valid file.")
-
-    if not valid_file_type(audio_file_path):
-      raise ValueError(f"Only audio files accepted. '{audio_file_path}' is not an audio file.")
+    validate_path(audio_file_path)
 
     try:
       logging.info(f"Loading audio file: {audio_file_path}")
@@ -186,10 +160,7 @@ class CloudTranscriber():
         audio_chunks = self.__split_audio(audio)
         chunk_file_paths = self.__generate_chunk_files(audio_chunks)
         
-        if use_threads:
-          transcript = self.__threading_transcription(chunk_file_paths=chunk_file_paths)
-        else:
-          transcript = self.__transcribe_multiple_chunks(chunk_file_paths)
+        transcript = self.__threading_transcription(chunk_file_paths=chunk_file_paths)
         self.__delete_chunks()
         return transcript
     except Exception as e:

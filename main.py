@@ -19,8 +19,12 @@ def main(args):
   try:
     transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider, args.model_size)
     transcript = transcriber.transcribe(args.audio)
-    if transcript:
-      save_transcript(transcript=transcript)
+    
+    if not transcript:
+      logging.warning("Transcript is null...")
+      return
+    
+    save_transcript(transcript=transcript)
   except FileNotFoundError as e:
     logging.error(e)
   except ValueError as e:

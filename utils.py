@@ -1,16 +1,20 @@
 import pathlib
 import logging
+import magic
 
-def valid_file_type(filename:str):
-  accepted_types = ['.mp3', '.mp4', '.wav']
-  file_extension = pathlib.Path(filename).suffix.lower()
-  if file_extension in accepted_types:
-    return True
-  else:
-    return False
+from pathlib import Path
   
 def save_transcript(transcript):
   with open("transcript.txt", "w", encoding="utf-8") as output_file:
       output_file.write(transcript)
 
   logging.info("Transcript saved to transcript.txt")
+  
+def validate_path(audio_file_path):  
+  if not Path(audio_file_path).exists() or not Path(audio_file_path).is_file():
+    raise FileNotFoundError(f"The file '{audio_file_path}' does not exist or is not a file.")
+
+  mime = magic.from_file(audio_file_path, mime=True)
+  print(mime)
+  if mime != 'audio/mpeg':
+    raise ValueError(f"Only audio files are allowed")
