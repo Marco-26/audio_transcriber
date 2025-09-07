@@ -7,9 +7,8 @@ from openai import OpenAI
 from pydub import AudioSegment
 from utils import valid_file_type
 from faster_whisper import WhisperModel
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
-import threading
+from concurrent.futures import ThreadPoolExecutor
+from utils import save_transcript
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -51,15 +50,12 @@ class Transcriber():
     #TODO: Validate file type aswell
 
   def transcribe(self, audio_file_path) -> str:
-    start_time = time.time()
     self._validate_path(audio_file_path)
-    transcript = ""
     
     if self.provider:
-     transcript = self.provider.transcribe(audio_file_path=audio_file_path)
-    end_time = time.time()
-    logging.info(f'Processing time with threading: {end_time-start_time:.2f} seconds')
-    return transcript
+     return self.provider.transcribe(audio_file_path=audio_file_path)
+     
+    return ""
 
 class LocalTranscriber():
   def __init__(self, model_size:str="tiny"):
