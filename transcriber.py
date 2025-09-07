@@ -7,7 +7,9 @@ from openai import OpenAI
 from pydub import AudioSegment
 from utils import valid_file_type
 from faster_whisper import WhisperModel
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -46,12 +48,18 @@ class Transcriber():
   def _validate_path(self, audio_file_path):  
     if not Path(audio_file_path).exists() or not Path(audio_file_path).is_file():
       raise FileNotFoundError(f"The file '{audio_file_path}' does not exist or is not a file.")
+    #TODO: Validate file type aswell
 
   def transcribe(self, audio_file_path) -> str:
+    start_time = time.time()
     self._validate_path(audio_file_path)
+    transcript = ""
     
     if self.provider:
-     return self.provider.transcribe(audio_file_path=audio_file_path)
+     transcript = self.provider.transcribe(audio_file_path=audio_file_path)
+    end_time = time.time()
+    logging.info(f'Processing time with threading: {end_time-start_time:.2f} seconds')
+    return transcript
 
 class LocalTranscriber():
   def __init__(self, model_size:str="tiny"):
@@ -74,9 +82,7 @@ class LocalTranscriber():
       raise ValueError(f"Only audio files accepted. '{audio_file_path}' is not an audio file.")
 
     try:
-      start = time.perf_counter()
       segments = self.__transcribe_audio_file(audio_file_path)
-      end = time.perf_counter()
       
       transcription = ''
       
@@ -97,6 +103,7 @@ class CloudTranscriber():
       raise ValueError(f"API key not defined for OpenAI. Please set it using OPENAI_API_KEY environment variable.")
     
     self.openai_client = OpenAI(api_key=api_key)
+    self.transcription_threads = []
     
   def __transcribe_audio_file(self, audio_file_path):
     with open(audio_file_path, "rb") as audio_to_transcribe:
@@ -151,7 +158,22 @@ class CloudTranscriber():
     os.makedirs(self.OUTPUT_CHUNKS_FOLDER_PATH)
     logging.info("Temporary chunk files deleted.")
 
+  def _worker_idx(self, idx: int, path: str):
+    return idx, (self.__transcribe_single_chunk(path) or "")
+
+  def __threading_transcription(self, chunk_file_paths) -> str:
+    if not chunk_file_paths:
+        return ""
+
+    results = [""] * len(chunk_file_paths)
+    max_workers = min(8, len(chunk_file_paths))
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        for idx, text in pool.map(self._worker_idx, range(len(chunk_file_paths)), chunk_file_paths):
+            results[idx] = text
+    return "".join(results)
+    
   def transcribe(self, audio_file_path) -> str:
+    use_threads = False
     if not os.path.exists(audio_file_path) or not os.path.isfile(audio_file_path):
       raise FileNotFoundError(f"Error: The file '{audio_file_path}' does not exist or is not a valid file.")
 
@@ -167,7 +189,11 @@ class CloudTranscriber():
       else:
         audio_chunks = self.__split_audio(audio)
         chunk_file_paths = self.__generate_chunk_files(audio_chunks)
-        transcript = self.__transcribe_multiple_chunks(chunk_file_paths)
+        
+        if use_threads:
+          transcript = self.__threading_transcription(chunk_file_paths=chunk_file_paths)
+        else:
+          transcript = self.__transcribe_multiple_chunks(chunk_file_paths)
         self.__delete_chunks()
         return transcript
     except Exception as e:
