@@ -1,6 +1,7 @@
-venv/
+.venv/
 .env
 data/
 output_chunks/
 transcriptions/
 .DS_Store
+*.pyc

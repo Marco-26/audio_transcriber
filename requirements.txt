@@ -1,2 +1,5 @@
 openai
 pydub
+python-magic
+python-dotenv
+faster-whisper
