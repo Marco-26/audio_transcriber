@@ -31,7 +31,7 @@ python main.py <audio_file_path> [--provider PROVIDER] [--model_size MODEL_SIZE]
 ```
 
 - `<audio_file_path>`: Path to the audio file you want to transcribe (required).
-- `--provider`: Type of provider to use for transcription. Options: `OpenAI` (default), `Local`.
+- `--provider`: Type of provider to use for transcription. Options: `OpenAI` (default), `Local` (runs the Whisper model directly on your machine using local CPU/GPU resources).
 - `--model_size`: (For local provider) Whisper model size. Default: `tiny`.
 
 **Example:**
