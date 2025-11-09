@@ -1,7 +1,5 @@
-import pathlib
 import logging
 import magic
-
 from pathlib import Path
   
 def save_transcript(transcript):

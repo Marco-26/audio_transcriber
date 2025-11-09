@@ -1,12 +1,8 @@
 import logging
 import argparse
-import os
-
 from transcriber import Transcriber, MODEL_SIZES
-
 from utils import save_transcript
-from dotenv import load_dotenv
-load_dotenv()
+from constants import OPENAI_API_KEY
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
@@ -17,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 def main(args):
   try:
-    transcriber = Transcriber(os.getenv("OPENAI_API_KEY"), args.provider, args.model_size)
+    transcriber = Transcriber(OPENAI_API_KEY, args.provider, args.model_size)
     transcript = transcriber.transcribe(args.audio)
     
     if not transcript:

@@ -1,40 +1,14 @@
 import os
 import shutil
 import logging
-import magic
-
-from pathlib import Path
 from openai import OpenAI
 from pydub import AudioSegment
 from utils import validate_path
+from constants import MODEL_SIZES, MODEL_TYPES, WORKER_THREAD_COUNT
 from faster_whisper import WhisperModel
 from concurrent.futures import ThreadPoolExecutor
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-MODEL_SIZES=[
-  "tiny.en", 
-  "tiny", 
-  "base.en", 
-  "base", 
-  "small.en", 
-  "small", 
-  "medium.en", 
-  "medium", 
-  "large-v1", 
-  "large-v2", 
-  "large-v3", 
-  "large", 
-  "distil-large-v2", 
-  "distil-medium.en", 
-  "distil-small.en", 
-  "distil-large-v3", 
-  "large-v3-turbo", 
-  "turbo"
-]
-
-MODEL_TYPES=["local","openai"]
 
 class Transcriber():
   def __init__(self, api_key:str, provider:str, model_size:str):
@@ -70,12 +44,12 @@ class LocalTranscriber():
     try:
       segments = self.__transcribe_audio_file(audio_file_path)
       
-      transcription = ''
+      transcription = [""]
       
       with open("transcription.txt", "w") as file:
         for segment in segments:
-          transcription += segment.text
-      return transcription
+          transcription.append(segment.text)
+      return "".join(transcription)
     except Exception as e:
       logging.error(f"An error occurred during transcription: {e}")
       raise RuntimeError(f"An error occurred during transcription: {e}")
@@ -89,7 +63,6 @@ class CloudTranscriber():
       raise ValueError(f"API key not defined for OpenAI. Please set it using OPENAI_API_KEY environment variable.")
     
     self.openai_client = OpenAI(api_key=api_key)
-    self.transcription_threads = []
     
   def __transcribe_audio_file(self, audio_file_path):
     with open(audio_file_path, "rb") as audio_to_transcribe:
@@ -133,18 +106,15 @@ class CloudTranscriber():
     os.makedirs(self.OUTPUT_CHUNKS_FOLDER_PATH)
     logging.info("Temporary chunk files deleted.")
 
-  def _worker_idx(self, idx: int, path: str):
-    return idx, (self.__transcribe_single_chunk(path) or "")
-
   def __threading_transcription(self, chunk_file_paths) -> str:
     if not chunk_file_paths:
-        return ""
+      raise ValueError("No chunk file paths provided for transcription.")
 
     results = [""] * len(chunk_file_paths)
-    max_workers = min(8, len(chunk_file_paths))
+    max_workers = min(WORKER_THREAD_COUNT, len(chunk_file_paths))
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for idx, text in pool.map(self._worker_idx, range(len(chunk_file_paths)), chunk_file_paths):
-            results[idx] = text
+      results = list(pool.map(self.__transcribe_single_chunk, chunk_file_paths))
+      
     return "".join(results)
     
   def transcribe(self, audio_file_path) -> str:
