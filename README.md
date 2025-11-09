@@ -55,10 +55,12 @@ The transcript will be saved to a file named `transcript.txt` in the project roo
 - **Audio Compression:** Compress audio files before transcription for better performance and faster processing.
 - **File Size Limitation:** Optimized for audio files up to 25 minutes. Larger files are split into chunks automatically.
 
-## Performance Note for Local Transcription
-Using the Local provider runs Whisper models directly on your machine and can be resource-intensive, especially for larger model sizes.
-If your machine is older or lower-spec, you may experience slower transcription speeds and high CPU usage. For better performance on such systems, use the OpenAI provider instead with the appropriate API key.
-
+## Performance 
+- **OpenAI Provider:** The latest update introduces multithreaded processing, significantly improving transcription speed. An audio file of 1 hour and 15 minutes was transcribed in just ~89.86 seconds with threading, compared to ~372.7 seconds without it. This makes the API option ideal for faster, large-scale transcription workloads.
+- **Local Provider:** Running Whisper models locally can still be resource-intensive, particularly for larger model sizes.
+On lower-spec or older machines, you may experience higher CPU usage and slower processing speeds.
+For the best performance on such systems, the OpenAI provider remains the recommended choice.
+  
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
