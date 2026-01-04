@@ -1,19 +1,19 @@
 import logging
 import argparse
-from transcriber import Transcriber, MODEL_SIZES
+from transcriber import Transcriber
 from utils import save_transcript
-from constants import OPENAI_API_KEY
+from constants import OPENAI_API_KEY, ModelSize, Provider
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
-parser.add_argument("--provider", type=str, help='Type of provider to transcribe file (OpenAI, Local)', default='OpenAI', choices=["openai", "local"])
-parser.add_argument("--model_size", type=str, help='Transcription Model Size', default='tiny', choices=MODEL_SIZES)
+parser.add_argument("--provider", type=Provider, help='Type of provider to transcribe file (OpenAI, Local)', default=Provider.OPENAI, choices=list(Provider))
+parser.add_argument("--model_size", type=ModelSize, help='Transcription Model Size', default=ModelSize.TINY, choices=list(ModelSize))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def main(args):
   try:
-    transcriber = Transcriber(OPENAI_API_KEY, args.provider, args.model_size)
+    transcriber = Transcriber(OPENAI_API_KEY, Provider(args.provider), ModelSize(args.model_size))
     transcript = transcriber.transcribe(args.audio)
     
     if not transcript:

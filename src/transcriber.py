@@ -4,34 +4,34 @@ import logging
 from openai import OpenAI
 from pydub import AudioSegment
 from utils import validate_path
-from constants import MODEL_SIZES, MODEL_TYPES, WORKER_THREAD_COUNT
+from constants import ModelSize, Provider, WORKER_THREAD_COUNT
 from faster_whisper import WhisperModel
 from concurrent.futures import ThreadPoolExecutor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class Transcriber():
-  def __init__(self, api_key:str, provider:str, model_size:str):
-    if provider.lower() == 'openai':
+  def __init__(self, api_key:str, provider:Provider, model_size:ModelSize):
+    if provider == Provider.OPENAI:
       self.provider = CloudTranscriber(api_key)  
-    elif provider.lower() == 'local':
+    elif provider == Provider.LOCAL:
       self.provider = LocalTranscriber(model_size)
     else:
-      raise ValueError(f"Provider {provider} not availabe. Providers: {MODEL_TYPES}")
+      raise ValueError(f"Provider {provider} not available. Providers: {list(Provider)}")
   
   def transcribe(self, audio_file_path) -> str:
     if self.provider:
      return self.provider.transcribe(audio_file_path=audio_file_path)
-     
+
     return ""
 
 class LocalTranscriber():
-  def __init__(self, model_size:str="tiny"):
-    if model_size not in MODEL_SIZES:
+  def __init__(self, model_size:ModelSize=ModelSize.TINY):
+    if not isinstance(model_size, ModelSize):
       logging.error("Specified model size doesn't exist")
-      raise ValueError(f'Invalid model size {model_size}. Available sizes: {MODEL_SIZES}')
+      raise ValueError(f'Invalid model size {model_size}. Available sizes: {list(ModelSize)}')
         
-    self.model = WhisperModel(model_size, 'cpu', compute_type="int8")  
+    self.model = WhisperModel(model_size.value, 'cpu', compute_type="int8")  
     
   def __transcribe_audio_file(self, audio_file_path):
     segments, _ = self.model.transcribe(audio_file_path, beam_size=5)
