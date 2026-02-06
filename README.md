@@ -68,7 +68,8 @@ The transcript will be saved to a file named `transcript.txt` in the project roo
 - **Multiple Providers**: Support for OpenAI Whisper API, Deepgram, and local Whisper models
 - **Language Support**: Optional language specification for improved accuracy, or auto-detection
 - **Audio Splitting**: Large audio files are automatically split into smaller chunks for efficient transcription
-- **Multithreaded Processing**: Parallel transcription of chunks for faster processing
+- **Optimized Concurrent Processing**: Scales up to 30 concurrent API calls (or number of chunks, whichever is smaller) for maximum throughput
+- **Structured Logging**: Tagged log messages for easy filtering and debugging
 - **Provider Architecture**: Clean, extensible design using factory pattern and abstract base classes
 - **Output**: Saves the transcript as a text file
 
@@ -99,11 +100,13 @@ The transcript will be saved to a file named `transcript.txt` in the project roo
 - **Audio Compression**: Compress audio files before transcription for better performance and faster processing.
 - **File Size Limitation**: Optimized for audio files up to 25 minutes. Larger files are split into chunks automatically.
 - **Language Specification**: If you know the language, specify it using `--language` for better accuracy and faster processing.
+- **Large Files**: Files split into many chunks benefit from the improved concurrent processing - all chunks process in parallel (up to 30 concurrent workers), dramatically reducing total transcription time.
 
 ## Performance
 
-- **OpenAI Provider**: Multithreaded processing significantly improves transcription speed. An audio file of 1 hour and 15 minutes was transcribed in just ~89.86 seconds with threading, compared to ~372.7 seconds without it.
-- **Deepgram Provider**: Typically 5-40× faster than alternatives with sub-300ms latency. Often 2.5-3× cheaper than OpenAI.
+- **Concurrent Processing**: The tool automatically scales concurrent API calls based on the number of chunks (up to 30 concurrent workers). For example, a file split into 18 chunks will process all 18 chunks concurrently, significantly reducing total transcription time.
+- **OpenAI Provider**: Multithreaded processing significantly improves transcription speed. An audio file of 1 hour and 15 minutes was transcribed in just ~89.86 seconds with threading, compared to ~372.7 seconds without it. With the improved concurrent processing, files with many chunks process even faster.
+- **Deepgram Provider**: Typically 5-40× faster than alternatives with sub-300ms latency. Often 2.5-3× cheaper than OpenAI. Benefits from concurrent processing for files with multiple chunks.
 - **Local Provider**: Running Whisper models locally can be resource-intensive, particularly for larger model sizes. On lower-spec machines, you may experience higher CPU usage and slower processing speeds. For best performance, cloud providers are recommended.
 
 ## Language Support
@@ -128,6 +131,8 @@ The codebase uses a clean, extensible architecture:
 - **Abstract Base Class**: `BaseTranscriber` defines the interface all providers must implement
 - **Modular Design**: Each provider is in its own file under `src/providers/`
 - **Easy Extension**: Adding new providers is straightforward - just create a new class inheriting from `BaseTranscriber`
+- **Structured Logging**: All log messages include tags (e.g., `[OPENAI_TRANSCRIBER]`, `[DEEPGRAM_TRANSCRIBER]`) for easy filtering and debugging
+- **Optimized Concurrency**: Uses `ThreadPoolExecutor` with dynamic worker count (up to 30) based on chunk count for I/O-bound API calls
 
 ## License
 
