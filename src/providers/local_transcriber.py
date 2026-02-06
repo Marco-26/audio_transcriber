@@ -10,16 +10,25 @@ class LocalTranscriber(BaseTranscriber):
   def __init__(self, model_size:ModelSize=ModelSize.TINY):
     self.model = WhisperModel(model_size.value, 'cpu', compute_type="int8")  
     
-  def __transcribe_audio_file(self, audio_file_path):
-    segments, _ = self.model.transcribe(audio_file_path, beam_size=5)
+  def __transcribe_audio_file(self, audio_file_path, language=None):
+    transcribe_params = {"beam_size": 5}
+    if language:
+      transcribe_params["language"] = language
+    
+    segments, _ = self.model.transcribe(audio_file_path, **transcribe_params)
     segments = list(segments)
     return segments
   
-  def transcribe(self, audio_file_path) -> str:
+  def transcribe(self, audio_file_path, language=None) -> str:
     validate_path(audio_file_path)
 
     try:
-      segments = self.__transcribe_audio_file(audio_file_path)
+      if language:
+        logging.info(f"Using specified language: {language}")
+      else:
+        logging.info("Auto-detecting language...")
+      
+      segments = self.__transcribe_audio_file(audio_file_path, language)
       
       transcription = [""]
       

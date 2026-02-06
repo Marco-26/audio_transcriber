@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
 parser.add_argument("--provider", type=Provider, help='Type of provider to transcribe file (OpenAI, Local, Deepgram)', default=Provider.OPENAI, choices=list(Provider))
 parser.add_argument("--model_size", type=ModelSize, help='Transcription Model Size', default=ModelSize.TINY, choices=list(ModelSize))
+parser.add_argument("--language", type=str, help='ISO 639-1 language code (e.g., en, es, fr). If not specified, language will be auto-detected.', default=None)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -21,7 +22,7 @@ def main(args):
       api_key = None
     
     transcriber = Transcriber(api_key, Provider(args.provider), ModelSize(args.model_size))
-    transcript = transcriber.transcribe(args.audio)
+    transcript = transcriber.transcribe(args.audio, language=args.language)
     
     if not transcript:
       logging.warning("Transcript is null...")

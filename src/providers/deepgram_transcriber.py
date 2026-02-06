@@ -20,7 +20,7 @@ class DeepgramTranscriber(BaseTranscriber):
     from deepgram import DeepgramClient, PrerecordedOptions, FileSource
     self.deepgram_client = DeepgramClient(api_key)
     
-  def __transcribe_audio_file(self, audio_file_path):
+  def __transcribe_audio_file(self, audio_file_path, language=None):
     from deepgram import PrerecordedOptions, FileSource
     
     with open(audio_file_path, "rb") as audio_file:
@@ -28,17 +28,21 @@ class DeepgramTranscriber(BaseTranscriber):
         "buffer": audio_file,
       }
       
-      options = PrerecordedOptions(
-        model="nova-2",
-        smart_format=True,
-      )
+      options_params = {
+        "model": "nova-2",
+        "smart_format": True,
+      }
+      if language:
+        options_params["language"] = language
+      
+      options = PrerecordedOptions(**options_params)
       
       response = self.deepgram_client.listen.rest.v("1").transcribe_file(payload, options)
       return response.results.channels[0].alternatives[0].transcript
 
-  def __transcribe_single_chunk(self, audio_chunk):
+  def __transcribe_single_chunk(self, audio_chunk, language=None):
     logging.info("Starting transcription of single chunk...")
-    transcript = self.__transcribe_audio_file(audio_chunk)
+    transcript = self.__transcribe_audio_file(audio_chunk, language)
     logging.info("Finished transcribing single chunk.")
     return transcript
 
@@ -69,31 +73,36 @@ class DeepgramTranscriber(BaseTranscriber):
     os.makedirs(self.OUTPUT_CHUNKS_FOLDER_PATH)
     logging.info("Temporary chunk files deleted.")
 
-  def __threading_transcription(self, chunk_file_paths) -> str:
+  def __threading_transcription(self, chunk_file_paths, language=None) -> str:
     if not chunk_file_paths:
       raise ValueError("No chunk file paths provided for transcription.")
 
     results = [""] * len(chunk_file_paths)
     max_workers = min(WORKER_THREAD_COUNT, len(chunk_file_paths))
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-      results = list(pool.map(self.__transcribe_single_chunk, chunk_file_paths))
+      results = list(pool.map(lambda chunk: self.__transcribe_single_chunk(chunk, language), chunk_file_paths))
       
     return "".join(results)
     
-  def transcribe(self, audio_file_path) -> str:
+  def transcribe(self, audio_file_path, language=None) -> str:
     validate_path(audio_file_path)
 
     try:
       logging.info(f"Loading audio file: {audio_file_path}")
+      if language:
+        logging.info(f"Using specified language: {language}")
+      else:
+        logging.info("Auto-detecting language...")
+      
       audio = AudioSegment.from_mp3(audio_file_path)
 
       if len(audio) <= self.MAX_CHUNK_LENGTH_IN_MS:
-        return self.__transcribe_single_chunk(audio_file_path)
+        return self.__transcribe_single_chunk(audio_file_path, language)
       else:
         audio_chunks = self.__split_audio(audio)
         chunk_file_paths = self.__generate_chunk_files(audio_chunks)
         
-        transcript = self.__threading_transcription(chunk_file_paths=chunk_file_paths)
+        transcript = self.__threading_transcription(chunk_file_paths=chunk_file_paths, language=language)
         self.__delete_chunks()
         return transcript
     except Exception as e:
