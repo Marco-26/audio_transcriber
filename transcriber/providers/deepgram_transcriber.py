@@ -3,8 +3,8 @@ import shutil
 import logging
 from pydub import AudioSegment
 from transcriber.transcriber import BaseTranscriber
-from utils import validate_path
-from constants import MAX_CONCURRENT_TRANSCRIPTIONS, LOG_TAG_DEEPGRAM
+from transcriber.utils import validate_path
+from transcriber.constants import MAX_CONCURRENT_TRANSCRIPTIONS, LOG_TAG_DEEPGRAM
 from concurrent.futures import ThreadPoolExecutor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

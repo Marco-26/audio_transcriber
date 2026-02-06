@@ -1,8 +1,8 @@
 import logging
 import argparse
-from transcriber import Transcriber
-from utils import save_transcript
-from constants import OPENAI_API_KEY, DEEPGRAM_API_KEY, ModelSize, Provider, LOG_TAG_MAIN
+from transcriber.transcriber import Transcriber
+from transcriber.utils import save_transcript
+from transcriber.constants import OPENAI_API_KEY, DEEPGRAM_API_KEY, ModelSize, Provider, LOG_TAG_MAIN
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')

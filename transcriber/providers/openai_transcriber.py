@@ -3,9 +3,9 @@ import shutil
 import logging
 from openai import OpenAI
 from pydub import AudioSegment
-from transcriber import BaseTranscriber 
-from utils import validate_path
-from constants import MAX_CONCURRENT_TRANSCRIPTIONS, LOG_TAG_OPENAI
+from transcriber.transcriber import BaseTranscriber 
+from transcriber.utils import validate_path
+from transcriber.constants import MAX_CONCURRENT_TRANSCRIPTIONS, LOG_TAG_OPENAI
 from concurrent.futures import ThreadPoolExecutor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

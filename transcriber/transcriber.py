@@ -1,5 +1,5 @@
 import logging
-from constants import ModelSize, Provider
+from transcriber.constants import ModelSize, Provider
 from abc import ABC, abstractmethod
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -25,13 +25,13 @@ class TranscriberFactory:
   @staticmethod
   def create(api_key: str, provider: Provider, model_size: ModelSize):
     if provider == Provider.OPENAI:
-      from providers.openai_transcriber import OpenAITranscriber
+      from transcriber.providers.openai_transcriber import OpenAITranscriber
       return OpenAITranscriber(api_key)
     elif provider == Provider.LOCAL:
-      from providers.local_transcriber import LocalTranscriber
+      from transcriber.providers.local_transcriber import LocalTranscriber
       return LocalTranscriber(model_size)
     elif provider == Provider.DEEPGRAM:
-      from providers.deepgram_transcriber import DeepgramTranscriber
+      from transcriber.providers.deepgram_transcriber import DeepgramTranscriber
       return DeepgramTranscriber(api_key)
 
 class Transcriber(BaseTranscriber):

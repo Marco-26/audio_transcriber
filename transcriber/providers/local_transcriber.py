@@ -1,7 +1,7 @@
 import logging
 from transcriber.transcriber import BaseTranscriber
-from utils import validate_path
-from constants import ModelSize, LOG_TAG_LOCAL
+from transcriber.utils import validate_path
+from transcriber.constants import ModelSize, LOG_TAG_LOCAL
 from faster_whisper import WhisperModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
