@@ -5,3 +5,4 @@ output_chunks/
 transcriptions/
 .DS_Store
 *.pyc
+*.vscode

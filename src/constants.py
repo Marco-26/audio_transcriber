@@ -26,7 +26,9 @@ class ModelSize(str, Enum):
 class Provider(str, Enum):
   LOCAL = "local"
   OPENAI = "openai"
+  DEEPGRAM = "deepgram"
 
 OPENAI_API_KEY=os.getenv("OPENAI_API_KEY")
+DEEPGRAM_API_KEY=os.getenv("DEEPGRAM_API_KEY")
 
 WORKER_THREAD_COUNT=4

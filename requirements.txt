@@ -3,3 +3,4 @@ pydub
 python-magic
 python-dotenv
 faster-whisper
+deepgram-sdk
