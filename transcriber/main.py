@@ -2,7 +2,7 @@ import logging
 import argparse
 from transcriber import Transcriber
 from utils import save_transcript
-from constants import OPENAI_API_KEY, DEEPGRAM_API_KEY, ModelSize, Provider
+from constants import OPENAI_API_KEY, DEEPGRAM_API_KEY, ModelSize, Provider, LOG_TAG_MAIN
 
 parser = argparse.ArgumentParser()
 parser.add_argument("audio", type=str, help='Filepath of audio file to use as raw audio source')
@@ -25,16 +25,16 @@ def main(args):
     transcript = transcriber.transcribe(args.audio, language=args.language)
     
     if not transcript:
-      logging.warning("Transcript is null...")
+      logging.warning(f"{LOG_TAG_MAIN} Transcript is null...")
       return
     
     save_transcript(transcript=transcript)
   except FileNotFoundError as e:
-    logging.error(e)
+    logging.error(f"{LOG_TAG_MAIN} {e}")
   except ValueError as e:
-    logging.error(e)
+    logging.error(f"{LOG_TAG_MAIN} {e}")
   except RuntimeError as e:
-    logging.error(e)
+    logging.error(f"{LOG_TAG_MAIN} {e}")
 
 if __name__ == "__main__":
   args = parser.parse_args()

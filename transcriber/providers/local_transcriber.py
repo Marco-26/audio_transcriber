@@ -1,7 +1,7 @@
 import logging
-from base_transcriber import BaseTranscriber
+from transcriber.transcriber import BaseTranscriber
 from utils import validate_path
-from constants import ModelSize
+from constants import ModelSize, LOG_TAG_LOCAL
 from faster_whisper import WhisperModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -24,9 +24,9 @@ class LocalTranscriber(BaseTranscriber):
 
     try:
       if language:
-        logging.info(f"Using specified language: {language}")
+        logging.info(f"{LOG_TAG_LOCAL} Using specified language: {language}")
       else:
-        logging.info("Auto-detecting language...")
+        logging.info(f"{LOG_TAG_LOCAL} Auto-detecting language...")
       
       segments = self.__transcribe_audio_file(audio_file_path, language)
       
@@ -37,5 +37,5 @@ class LocalTranscriber(BaseTranscriber):
           transcription.append(segment.text)
       return "".join(transcription)
     except Exception as e:
-      logging.error(f"An error occurred during transcription: {e}")
+      logging.error(f"{LOG_TAG_LOCAL} An error occurred during transcription: {e}")
       raise RuntimeError(f"An error occurred during transcription: {e}")

@@ -3,9 +3,9 @@ import shutil
 import logging
 from openai import OpenAI
 from pydub import AudioSegment
-from base_transcriber import BaseTranscriber
+from transcriber import BaseTranscriber 
 from utils import validate_path
-from constants import WORKER_THREAD_COUNT
+from constants import MAX_CONCURRENT_TRANSCRIPTIONS, LOG_TAG_OPENAI
 from concurrent.futures import ThreadPoolExecutor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -34,19 +34,19 @@ class OpenAITranscriber(BaseTranscriber):
     return transcript_obj.text
 
   def __transcribe_single_chunk(self, audio_chunk, language=None):
-    logging.info("Starting transcription of single chunk...")
+    logging.info(f"{LOG_TAG_OPENAI} Starting transcription of single chunk...")
     transcript = self.__transcribe_audio_file(audio_chunk, language)
-    logging.info("Finished transcribing single chunk.")
+    logging.info(f"{LOG_TAG_OPENAI} Finished transcribing single chunk.")
     return transcript
 
   def __split_audio(self, audio):
-    logging.info("Splitting audio into smaller chunks...")
+    logging.info(f"{LOG_TAG_OPENAI} Splitting audio into smaller chunks...")
     audio_chunks = [audio[i:i + self.MAX_CHUNK_LENGTH_IN_MS] for i in range(0, len(audio), self.MAX_CHUNK_LENGTH_IN_MS)]
-    logging.info(f"Audio split into {len(audio_chunks)} chunks.")
+    logging.info(f"{LOG_TAG_OPENAI} Audio split into {len(audio_chunks)} chunks.")
     return audio_chunks
 
   def __generate_chunk_files(self, audio_chunks):
-    logging.info("Generating temporary chunk files...")
+    logging.info(f"{LOG_TAG_OPENAI} Generating temporary chunk files...")
     chunk_file_paths = []
 
     if not os.path.exists(self.OUTPUT_CHUNKS_FOLDER_PATH):
@@ -57,21 +57,22 @@ class OpenAITranscriber(BaseTranscriber):
       audio_chunk.export(chunk_file_path, format="mp3")
       chunk_file_paths.append(chunk_file_path)
 
-    logging.info(f"Created {len(chunk_file_paths)} chunk files from the original audio.")
+    logging.info(f"{LOG_TAG_OPENAI} Created {len(chunk_file_paths)} chunk files from the original audio.")
     return chunk_file_paths
 
   def __delete_chunks(self):
-    logging.info("Deleting temporary chunk files...")
+    logging.info(f"{LOG_TAG_OPENAI} Deleting temporary chunk files...")
     shutil.rmtree(self.OUTPUT_CHUNKS_FOLDER_PATH)
     os.makedirs(self.OUTPUT_CHUNKS_FOLDER_PATH)
-    logging.info("Temporary chunk files deleted.")
+    logging.info(f"{LOG_TAG_OPENAI} Temporary chunk files deleted.")
 
   def __threading_transcription(self, chunk_file_paths, language=None) -> str:
     if not chunk_file_paths:
       raise ValueError("No chunk file paths provided for transcription.")
 
     results = [""] * len(chunk_file_paths)
-    max_workers = min(WORKER_THREAD_COUNT, len(chunk_file_paths))
+    max_workers = min(MAX_CONCURRENT_TRANSCRIPTIONS, len(chunk_file_paths))
+    logging.info(f"{LOG_TAG_OPENAI} Processing {len(chunk_file_paths)} chunks with {max_workers} concurrent workers...")
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
       results = list(pool.map(lambda chunk: self.__transcribe_single_chunk(chunk, language), chunk_file_paths))
       
@@ -81,11 +82,11 @@ class OpenAITranscriber(BaseTranscriber):
     validate_path(audio_file_path)
 
     try:
-      logging.info(f"Loading audio file: {audio_file_path}")
+      logging.info(f"{LOG_TAG_OPENAI} Loading audio file: {audio_file_path}")
       if language:
-        logging.info(f"Using specified language: {language}")
+        logging.info(f"{LOG_TAG_OPENAI} Using specified language: {language}")
       else:
-        logging.info("Auto-detecting language...")
+        logging.info(f"{LOG_TAG_OPENAI} Auto-detecting language...")
       
       audio = AudioSegment.from_mp3(audio_file_path)
 
@@ -99,5 +100,5 @@ class OpenAITranscriber(BaseTranscriber):
         self.__delete_chunks()
         return transcript
     except Exception as e:
-      logging.error(f"An error occurred during transcription: {e}")
+      logging.error(f"{LOG_TAG_OPENAI} An error occurred during transcription: {e}")
       raise RuntimeError(f"An error occurred during transcription: {e}")
