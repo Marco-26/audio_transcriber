@@ -1,7 +1,7 @@
 import logging
 import magic
 from pathlib import Path
-from constants import LOG_TAG_UTILS
+from transcriber.constants import LOG_TAG_UTILS
   
 def save_transcript(transcript):
   with open("transcript.txt", "w", encoding="utf-8") as output_file:
